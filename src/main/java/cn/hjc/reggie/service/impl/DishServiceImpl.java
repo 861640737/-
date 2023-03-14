@@ -13,6 +13,7 @@ import cn.hjc.reggie.service.DishService;
 import cn.hjc.reggie.util.KeyGeneration;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,8 @@ public class DishServiceImpl implements DishService {
     @Autowired
     private CategoryMapper categoryMapper;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
     @Transactional
@@ -61,7 +64,6 @@ public class DishServiceImpl implements DishService {
                     dishFlavors.get(i).setCreateUser(BaseContext.getCurrentId());
                     dishFlavors.get(i).setCreateTime(localDateTime);
                     dishFlavors.get(i).setDishId(id);
-
 
                     dishFlavors.get(i).setId(KeyGeneration.getId());
                 }
@@ -233,15 +235,25 @@ public class DishServiceImpl implements DishService {
 
     @Override
     public List<DishDto> getDishByCategoryId(Long categoryId) {
+        String key = "category-id-" + categoryId;
+
+        List<DishDto> dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+        if (dishDtoList != null && dishDtoList.size() > 0) {
+            return dishDtoList;
+        }
+
         List<Dish> dish = dishMapper.getDishByCategoryId(categoryId);
 
-        List<DishDto> dishDtoList = dish.stream().map((item) -> {
+        dishDtoList = dish.stream().map((item) -> {
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(item, dishDto);
             // 设置每个菜品的口味规格
             dishDto.setFlavors(dishFlavorMapper.getFlavorByDishId(item.getId()));
             return dishDto;
         }).collect(Collectors.toList());
+
+        redisTemplate.opsForValue().set(key, dishDtoList);
+
         return dishDtoList;
     }
 }

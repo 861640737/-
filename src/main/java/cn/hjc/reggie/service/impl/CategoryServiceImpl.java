@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +29,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
     private SetmealMapper setmealMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
     public boolean save(Category category) {
@@ -98,6 +102,14 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<Category> getAllList() {
-        return categoryMapper.selectAll();
+
+        List<Category> list = (List<Category>) redisTemplate.opsForValue().get("category-list");
+        if (list != null && list.size() > 0) {
+            return list;
+        }
+
+        list = categoryMapper.selectAll();
+        redisTemplate.opsForValue().set("category-list", list);
+        return list;
     }
 }
