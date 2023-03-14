@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -103,13 +104,23 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<Category> getAllList() {
 
-        List<Category> list = (List<Category>) redisTemplate.opsForValue().get("category-list");
+        List<Category> list = null;
+
+        try {
+            list = (List<Category>) redisTemplate.opsForValue().get("category-list");
+        } catch (Exception e) {
+        }
+
         if (list != null && list.size() > 0) {
             return list;
         }
 
         list = categoryMapper.selectAll();
-        redisTemplate.opsForValue().set("category-list", list);
+
+        try {
+            redisTemplate.opsForValue().set("category-list", list);
+        } catch (Exception e) {
+        }
         return list;
     }
 }

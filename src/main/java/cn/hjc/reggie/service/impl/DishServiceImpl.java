@@ -237,7 +237,13 @@ public class DishServiceImpl implements DishService {
     public List<DishDto> getDishByCategoryId(Long categoryId) {
         String key = "category-id-" + categoryId;
 
-        List<DishDto> dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+        List<DishDto> dishDtoList = null;
+
+        try {
+            dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+        }
+
         if (dishDtoList != null && dishDtoList.size() > 0) {
             return dishDtoList;
         }
@@ -252,7 +258,10 @@ public class DishServiceImpl implements DishService {
             return dishDto;
         }).collect(Collectors.toList());
 
-        redisTemplate.opsForValue().set(key, dishDtoList);
+        try {
+            redisTemplate.opsForValue().set(key, dishDtoList);
+        } catch (Exception e) {
+        }
 
         return dishDtoList;
     }
